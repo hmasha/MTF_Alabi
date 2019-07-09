@@ -35,10 +35,13 @@ import numpy as np
 #fileselector for test image
 import wx
 
-def get_path( wildcard):
+#get user input, file 
+
+
+def get_path( ):
     app = wx.App(None)
     style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
-    dialog = wx.FileDialog(None, 'Open', wildcard=wildcard, style=style)
+    dialog = wx.FileDialog(None, 'Open', wildcard="pictures (*.jpeg,*.png,*.tif)|*.jpeg;*.png;*.tif", style=style)
     if dialog.ShowModal() == wx.ID_OK:
         path = dialog.GetPath()
         dialog.Destroy()
@@ -46,7 +49,7 @@ def get_path( wildcard):
         path = None
     dialog.Destroy()
     return path
-filename = get_path('*.tif')
+filename = get_path()
 
 y_test = []
 test_data = []
