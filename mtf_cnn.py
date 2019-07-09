@@ -4,6 +4,8 @@
 Created on Mon Jul  8 16:08:32 2019
 https://stackoverflow.com/questions/18869550/python-pil-cut-off-my-16-bit-grayscale-image-at-8-bit
 https://stackoverflow.com/questions/8832714/how-to-use-multiple-wildcards-in-python-file-dialog
+https://www.datacamp.com/community/tutorials/convolutional-neural-networks-python
+
 @author: hillary.masha
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -117,17 +119,17 @@ incorrect = np.where(predicted_classes!=test_labels)[0]
 #display Result
 if predicted_classes[0] == 1:
     print("PASS")
-    """ arr = np.asarray(test_X.reshape(IMG_Height,IMG_Width))
+    arr = np.asarray(test_X.reshape(IMG_Height,IMG_Width))
     plt.imshow(arr, cmap='gray')
     plt.title("Prediction for {} : PASS".format(imgname))
-    plt.show() """
+    plt.show()
         
 else:
     print("FAIL")
-    """ arr = np.asarray(test_X.reshape(IMG_Height,IMG_Width))
+    arr = np.asarray(test_X.reshape(IMG_Height,IMG_Width))
     plt.imshow(arr, cmap='gray')
     plt.title("Prediction for {} : FAIL".format(imgname))
-    plt.show() """
+    plt.show()
 
 
 
