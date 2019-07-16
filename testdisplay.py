@@ -2,61 +2,105 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jul  8 16:08:32 2019
-
+https://www.pyimagesearch.com/2015/03/09/capturing-mouse-click-events-with-python-and-opencv/?fbclid=IwAR04aMA6iR8U1hhN6UiqDZOCLFUS7maG0SvJ1A0N6EzoLibJvLVNDpEF1-A
 @author: hillary.masha
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import flask
-# TensorFlow and tf.keras
-#import tensorflow as tf
-#from tensorflow import keras
-from keras.utils import to_categorical
+#Helper libraries
 from keras.models import load_model
-# Helper libraries
+from keras.utils import to_categorical
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
-import scipy
-import keras
-from keras.models import model_from_json
-from keras.models import Sequential,Input,Model
-from keras.layers import Dense, Dropout, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-from keras.layers.normalization import BatchNormalization
-from keras.layers.advanced_activations import LeakyReLU
-
+from keras.models import Model
 import cv2
-import glob
-import numpy as np
-
-#fileselector for test image
 import wx
 
-def get_path(wildcard):
+#fileselector for test image
+def get_path( ):
     app = wx.App(None)
     style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
-    dialog = wx.FileDialog(None, 'Open', wildcard=wildcard, style=style)
+    dialog = wx.FileDialog(None, 'Select Test Image(.tif,.png,.jpg)', wildcard="pictures (*.jpeg,*.png,*.tif,*.jpg)|*.jpeg;*.png;*.tif;*.jpg", style=style)
     if dialog.ShowModal() == wx.ID_OK:
         path = dialog.GetPath()
+        picfile = dialog.GetFilename()
+        for item in wx.GetTopLevelWindows():
+            if isinstance(item, wx.Dialog):
+                item.Destroy()
+            item.Close()
     else:
         path = None
     dialog.Destroy()
-    return path
-filename = get_path('*.png')
+    return path, picfile
+
+filename , imgname = get_path()
+
+# initialize the list of reference points and boolean indicating
+# whether cropping is being performed or not
+refPt = []
+cropping = False
+def click_and_crop(event, x, y, flags, param):
+    # grab references to the global variables
+    global refPt, cropping
+
+    # if the left mouse button was clicked, record the starting
+	# (x, y) coordinates and indicate that cropping is being
+	# performed
+    if event == cv2.EVENT_LBUTTONDOWN:
+        refPt = [(x, y)]
+        cropping = True
+    # check to see if the left mouse button was released
+    elif event == cv2.EVENT_LBUTTONUP:
+        # record the ending (x, y) coordinates and indicate that
+		# the cropping operation is finished
+        refPt.append((x, y))
+        cropping = False
+        # draw a rectangle around the region of interest
+        cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
+        cv2.imshow("image", image)
+
+#img_path = '/Users/hillary.masha/Raw/In.jpg'
+image = cv2.imread(filename)
+
+# load the image, clone it, and setup the mouse callback function
+clone = image.copy()
+cv2.namedWindow("image")
+cv2.setMouseCallback("image", click_and_crop)
+
+# keep looping until the 'q' key is pressed
+while True:
+    # display the image and wait for a keypress
+    cv2.imshow("image", image)
+    key=cv2.waitKey(1) & 0xFF
+    # if the 'r' key is pressed, reset the cropping region
+    if key == ord("r"):
+        image = clone.copy()
+    # if the 'c' key is pressed, break from the loop
+    elif key == ord("c"):
+        break
+
+# if there are two reference points, then crop the region of interest
+# from the image display and save it
+if len(refPt) == 2:
+    roi = clone[refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
+    cv2.imwrite("ROI.png", roi)
+    cv2.imshow("ROI", roi)
+    cv2.waitKey(0)
+
+# close all open windows
+cv2.destroyAllWindows()
+
+#store cropped image in numpy array
+cropped_img = "/Users/hillary.masha/code/MTF_Alabi/ROI.png"
 
 y_test = []
 test_data = []
-""" files7 = glob.glob ("/Users/hillary.masha/testMNIST/fail/*.png")
-files8 = glob.glob ("/Users/hillary.masha/testMNIST/pass/*.png") """
 
 IMG_Width = 30
 IMG_Height = 270
 
 #resize and store test data in array
 try:
-    image = cv2.imread (filename, cv2.IMREAD_GRAYSCALE)
+    image = cv2.imread (cropped_img, cv2.IMREAD_GRAYSCALE)
     image = cv2.resize(image, (IMG_Width, IMG_Height))
     test_data.append (image)
     y_test.append(0)
@@ -90,7 +134,7 @@ num_classes = 2
 model = load_model("model.h5")
 print("Loaded model from disk")
 
-model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+#model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 """ test_eval = model.evaluate(test_X, test_Y_one_hot, verbose=0)
 print('Test loss:', test_eval[0])
@@ -98,36 +142,38 @@ print('Test accuracy:', test_eval[1]) """
 
 predicted_classes = model.predict(test_X)
 predicted_classes = np.argmax(np.round(predicted_classes),axis=1)
+print("\nPredicted Class")
+print(predicted_classes)
 
 correct = np.where(predicted_classes==test_labels)[0]
 incorrect = np.where(predicted_classes!=test_labels)[0]
-print(correct)
-print(incorrect)
-
 
 #display Result
 if predicted_classes[0] == 1:
     print("PASS")
-    for i, correct in enumerate(correct[:0]):
-        plt.figure(figsize=[10,10])
-        plt.subplot(121)
-        plt.imshow(test_X[correct].reshape(IMG_Height,IMG_Width), cmap='gray', interpolation='none')
-        plt.title("PASS: Predicted {}, Actual {}".format(predicted_classes[correct], test_labels[correct]))
-        plt.tight_layout()
-
+    arr = np.asarray(test_X.reshape(IMG_Height,IMG_Width))
+    plt.imshow(arr, cmap='gray')
+    plt.title("Prediction for image : PASS")
+    plt.show()
+        
 else:
     print("FAIL")
-    for i, incorrect in enumerate(incorrect[:0]):
-        plt.figure(figsize=[10,10])
-        plt.subplot(3,3,i+1)
-        plt.imshow(test_X[incorrect].reshape(IMG_Height,IMG_Width), cmap='gray', interpolation='none')
-        plt.title("FAIL: Predicted {}, Actual {}".format(predicted_classes[incorrect], test_labels[incorrect]))
-        plt.tight_layout()
+    arr = np.asarray(test_X.reshape(IMG_Height,IMG_Width))
+    plt.imshow(arr, cmap='gray')
+    plt.title("Prediction for image : FAIL")
+    plt.show()
 
-plt.figure(figsize=[10,10])
-plt.imshow(test_X[0].reshape(IMG_Height,IMG_Width), cmap='gray', interpolation='none')
-plt.title("FAIL: Predicted {}, Actual {}".format(predicted_classes[0], test_labels[0]))
-plt.show
+
+
+
+
+
+
+
+
+
+
+
 
 
 
